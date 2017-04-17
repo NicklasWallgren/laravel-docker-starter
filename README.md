@@ -11,7 +11,7 @@ and [Nginx])
 This seed repo serves as an Laravel framework starter for anyone looking to get up and running with Laravel and PHP fast. Using Docker for building our environment.
 
 * Ready to go development environment using Docker for working with Laravel.
-* A great Lumen seed repo for anyone who wants to start their project.
+* A great Laravel seed repo for anyone who wants to start their project.
 
 ### Quick start
 **Make sure you have Docker version >= 17.04.0**
