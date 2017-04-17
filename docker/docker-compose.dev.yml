@@ -1,0 +1,49 @@
+version: '2.1'
+
+networks:
+    public:
+        driver: bridge
+    private:
+        driver: bridge
+
+services:
+  php-fpm:
+    extends:
+      file: docker-compose.yml
+      service: php-fpm
+    volumes:
+      - ${WWW_ROOT}:/var/www/html:cached
+      - ${PHP_CONFIG_FILE}:/usr/local/etc/php/php.ini
+      - ${XDEBUG_CONFIG_FILE}:/usr/local/etc/php/conf.d/xdebug.ini
+
+  php-cli:
+    extends:
+      file: docker-compose.yml
+      service: php-cli
+    volumes:
+      - ${WWW_ROOT}:/var/www/app:cached
+      - ${CLI_PHP_CONFIG_FILE}:/usr/local/etc/php/php.ini
+      - ${CLI_XDEBUG_CONFIG_FILE}:/usr/local/etc/php/conf.d/xdebug.ini
+
+  nginx:
+    extends:
+      file: docker-compose.yml
+      service: nginx
+    volumes:
+      - ${WWW_ROOT}:/var/www/html:cached
+      - ${NGINX_CONFIG_FILE}:/etc/nginx/nginx.conf:ro
+      - ${NGINX_VHOST_ROOT}:/etc/nginx/sites-available
+      - ${NGINX_LOG_ROOT}:/var/log/nginx
+
+  mysql:
+    extends:
+      file: docker-compose.yml
+      service: mysql
+    volumes:
+      - ./app/conf/mysql:/etc/mysql/conf.d
+      - ./app/logs/mysql:/var/logs/mysql/
+
+  memcached:
+    extends:
+      file: docker-compose.yml
+      service: memcached

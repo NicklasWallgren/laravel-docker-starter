@@ -1,0 +1,38 @@
+version: '2.1'
+
+networks:
+    public:
+        driver: bridge
+    private:
+        driver: bridge
+
+services:
+  php-fpm:
+    extends:
+      file: docker/docker-compose.dev.yml
+      service: php-fpm
+
+  php-cli:
+    extends:
+      file: docker/docker-compose.dev.yml
+      service: php-cli
+
+  nginx:
+    extends:
+      file: docker/docker-compose.dev.yml
+      service: nginx
+
+  mysql:
+    extends:
+      file: docker/docker-compose.dev.yml
+      service: mysql
+
+  memcached:
+    extends:
+      file: docker/docker-compose.dev.yml
+      service: memcached
+
+  node:
+    image: node:latest
+    volumes:
+      - ./laravel:/usr/src/app:cached

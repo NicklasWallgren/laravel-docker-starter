@@ -1,0 +1,191 @@
+FROM php:7.1-zts
+
+MAINTAINER Nicklas Wallgren <nicklas.wallgren@gmail.com>
+
+# Arguments
+ARG INSTALL_XDEBUG=false
+ARG INSTALL_MCRYPT=false
+ARG INSTALL_PDO_MYSQL=false
+ARG INSTALL_PDO_PGSQL=false
+ARG INSTALL_ICONV=false
+ARG INSTALL_SOAP=false
+ARG INSTALL_MBSTRING=false
+ARG INSTALL_SYSVSEM=false
+ARG INSTALL_MEMCACHED=false
+ARG XDEBUG_CONFIG_FILE=false
+
+# The application directory
+RUN mkdir -p /var/www/app
+WORKDIR /var/www/app
+
+#
+#--------------------------------------------------------------------------
+# Software's Installation
+
+#--------------------------------------------------------------------------
+#
+# Installing tools and PHP extentions using "apt", "docker-php", "pecl",
+#
+
+# Install "curl", "libmemcached-dev", "libpq-dev", "libjpeg-dev",
+#         "libpng12-dev", "libfreetype6-dev", "libssl-dev", "libmcrypt-dev",
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        zip \
+        unzip \
+        libmemcached-dev \
+        libz-dev \
+        libpq-dev \
+        libjpeg-dev \
+        libpng12-dev \
+        libfreetype6-dev \
+        libssl-dev
+
+RUN docker-php-ext-install opcache
+RUN docker-php-ext-install json
+
+#
+#--------------------------------------------------------------------------
+# XDEBUG extension installation
+#--------------------------------------------------------------------------
+#
+RUN if [ ${INSTALL_XDEBUG} = true ]; then \
+    # Install the xdebug extension
+    pecl install xdebug && \
+    docker-php-ext-enable xdebug \
+;fi
+
+
+#
+#--------------------------------------------------------------------------
+# MCRYPT extension installation
+#--------------------------------------------------------------------------
+RUN if [ ${INSTALL_MCRYPT} = true ]; then \
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            libmcrypt-dev && \
+
+    # Install the PHP mcrypt extension
+    docker-php-ext-install mcrypt \
+;fi
+
+#
+#--------------------------------------------------------------------------
+# PDO MYSQL extension installation
+#--------------------------------------------------------------------------
+#
+RUN if [ ${INSTALL_PDO_MYSQL} = true ]; then \
+    # Install the PHP pdo_mysql extension
+    docker-php-ext-install pdo_mysql \
+;fi
+
+#
+#--------------------------------------------------------------------------
+# PDO PGSQL extension installation
+#--------------------------------------------------------------------------
+#
+RUN if [ ${INSTALL_PDO_PGSQL} = true ]; then \
+    # Install the PHP pdo_pgsql extension
+    docker-php-ext-install pdo_pgsql \
+;fi
+
+#
+#--------------------------------------------------------------------------
+# ICONV extension installation
+#--------------------------------------------------------------------------
+#
+RUN if [ ${INSTALL_ICONV} = true ]; then \
+    # Install the PHP iconv extension
+    docker-php-ext-install iconv \
+;fi
+
+#
+#--------------------------------------------------------------------------
+# PDO SOAP extension installation
+#--------------------------------------------------------------------------
+#
+RUN if [ ${INSTALL_SOAP} = true ]; then \
+     apt-get install -y --no-install-recommends \
+            libxml2 \
+            libxml2-dev && \
+
+    # Install the PHP soap extension
+    docker-php-ext-install soap \
+;fi
+
+#
+#--------------------------------------------------------------------------
+# MBSTRING extension installation
+#--------------------------------------------------------------------------
+#
+RUN if [ ${INSTALL_MBSTRING} = true ]; then \
+    # Install the PHP soap extension
+    docker-php-ext-install mbstring \
+;fi
+
+#
+#--------------------------------------------------------------------------
+# PTHREADS extension installation
+#--------------------------------------------------------------------------
+#
+#RUN pecl install pthreads
+#RUN docker-php-ext-enable pthreads
+
+#
+#--------------------------------------------------------------------------
+# Sysvsem extension installation
+#--------------------------------------------------------------------------
+#
+RUN docker-php-ext-install sysvsem
+
+#
+#--------------------------------------------------------------------------
+# Zip extension installation
+#--------------------------------------------------------------------------
+#
+RUN docker-php-ext-install zip
+
+#
+#--------------------------------------------------------------------------
+# MBSTRING extension installation
+#--------------------------------------------------------------------------
+#
+RUN if [ ${INSTALL_SYSVSEM} = true ]; then \
+    # Install the PHP sysvsem extension
+    docker-php-ext-install sysvsem \
+;fi
+
+#
+#--------------------------------------------------------------------------
+# MEMCACHED extension installation
+#--------------------------------------------------------------------------
+#
+RUN if [ ${INSTALL_MEMCACHED} = true ]; then \
+    # Retrieve the latest version of memcached
+    cd /tmp && \
+    curl -L -o /tmp/memcached.zip https://github.com/php-memcached-dev/php-memcached/archive/php7.zip && \
+    unzip /tmp/memcached.zip && \
+    rm -r /tmp/memcached.zip && \
+    mkdir -p /usr/src/php/ext/memcached && \
+    mv php-memcached-php7/* /usr/src/php/ext/memcached && \
+
+    docker-php-ext-install memcached && \
+    docker-php-ext-enable memcached \
+;fi
+
+#
+#--------------------------------------------------------------------------
+# Composer installation
+#--------------------------------------------------------------------------
+#
+# Allow Composer to be run as root
+ENV COMPOSER_ALLOW_SUPERUSER 1
+
+# Setup the Composer installer
+RUN curl -o /tmp/composer-setup.php https://getcomposer.org/installer \
+  && curl -o /tmp/composer-setup.sig https://composer.github.io/installer.sig \
+  && php -r "if (hash('SHA384', file_get_contents('/tmp/composer-setup.php')) !== trim(file_get_contents('/tmp/composer-setup.sig'))) { unlink('/tmp/composer-setup.php'); echo 'Invalid installer' . PHP_EOL; exit(1); }"
+
+# Run the Composer install
+RUN php /tmp/composer-setup.php --no-ansi --install-dir=/usr/local/bin --filename=composer && rm -rf /tmp/composer-setup.php

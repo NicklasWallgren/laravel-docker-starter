@@ -1,0 +1,82 @@
+version: '2.1'
+
+networks:
+    public:
+        driver: bridge
+    private:
+        driver: bridge
+
+services:
+  php-fpm:
+    container_name: php-container-fpm
+    build:
+      context: .
+      dockerfile: ./images/php-7.1-fpm
+      args:
+        - INSTALL_XDEBUG=${INSTALL_XDEBUG-false}
+        - INSTALL_MCRYPT=${INSTALL_MCRYPT-false}
+        - INSTALL_PDO_MYSQL=${INSTALL_PDO_MYSQL-false}
+        - INSTALL_PDO_PGSQL=${INSTALL_PDO_PGSQL-false}
+        - INSTALL_ICONV=${INSTALL_ICONV-false}
+        - INSTALL_SOAP=${INSTALL_SOAP-false}
+        - INSTALL_MBSTRING=${INSTALL_MBSTRING-false}
+        - INSTALL_SYSVSEM=${INSTALL_SYSVSEM-false}
+        - INSTALL_MEMCACHED=${INSTALL_MEMCACHED-false}
+        - XDEBUG_CONFIG_FILE=${XDEBUG_CONFIG_FILE-null}
+    networks:
+      - private
+    env_file: ${ENV_FILE-.env.default}
+
+  php-cli:
+    container_name: php-container-cli
+    build:
+      context: .
+      dockerfile: ./images/php-7.1-cli
+      args:
+        - INSTALL_XDEBUG=${CLI_INSTALL_XDEBUG-false}
+        - INSTALL_MCRYPT=${CLI_INSTALL_MCRYPT-false}
+        - INSTALL_PDO_MYSQL=${CLI_INSTALL_PDO_MYSQL-false}
+        - INSTALL_PDO_PGSQL=${CLI_INSTALL_PDO_PGSQL-false}
+        - INSTALL_ICONV=${CLI_INSTALL_ICONV-false}
+        - INSTALL_SOAP=${CLI_INSTALL_SOAP-false}
+        - INSTALL_MBSTRING=${CLI_INSTALL_MBSTRING-false}
+        - INSTALL_SYSVSEM=${CLI_INSTALL_SYSVSEM-false}
+        - INSTALL_MEMCACHED=${CLI_INSTALL_MEMCACHED-false}
+        - XDEBUG_CONFIG_FILE=${CLI_XDEBUG_CONFIG_FILE-null}
+    networks:
+      - private
+    env_file: ${ENV_FILE-.env.default}
+    command: tail -f /dev/null
+
+  nginx:
+    container_name: nginx-container
+    image: ${NGINX_DOCKER_IMAGE_VENDOR}:${NGINX_DOCKER_IMAGE_TAG}
+    ports:
+      - "${NGINX_HOST_PORT}:80"
+    networks:
+      - public
+      - private
+    env_file: ${ENV_FILE-.env.default}
+
+  mysql:
+    container_name: mysql-container
+    image: ${MYSQL_DOCKER_IMAGE_VENDOR}:${MYSQL_DOCKER_IMAGE_TAG}
+    ports:
+      - "${MYSQL_HOST_PORT}:3306"
+    networks:
+      - private
+    env_file: ${ENV_FILE-.env.default}
+
+  memcached:
+    container_name: memcached-container
+    image: ${MEMCACHED_DOCKER_IMAGE_VENDOR}:${MEMCACHED_DOCKER_IMAGE_TAG}
+    ports:
+      - "${MEMCACHED_HOST_PORT}:11211"
+    networks:
+      - private
+    env_file: ${ENV_FILE-.env.default}
+
+
+
+
+

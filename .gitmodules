@@ -1,0 +1,6 @@
+[submodule "php-dockerized-composed"]
+	path = docker
+	url = git@github.com:NicklasWallgren/php-dockerized-composed.git
+[submodule "docker"]
+	path = docker
+	url = git@github.com:NicklasWallgren/php-dockerized-composed.git
