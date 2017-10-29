@@ -7,6 +7,14 @@ PROJECT_DIRECTORY=$(shell pwd)/laravel
 # Available docker containers
 CONTAINERS=php-fpm php-cli nginx mysql memcached node
 
+#####################################################
+#							 						#
+# 							 						#
+# RUNTIME TARGETS			 						#
+#							 						#
+#							 						#
+#####################################################
+
 default: run
 
 # Start the containers
@@ -24,11 +32,18 @@ stop: prerequisite valid-container
 halt: prerequisite
 	- docker-compose -f docker-compose.yml kill
 
-# Build the docker containers and the project
-build: prerequisite build-containers build-project update-project
-	- docker-compose -f docker-compose.yml up -d --build
+#####################################################
+#							 						#
+# 							 						#
+# SETUP AND BUILD TARGETS			 				#
+#							 						#
+#							 						#
+#####################################################
 
-# Build the containers
+# Build and prepare the docker containers and the project
+build: prerequisite build-containers build-project update-project launch-dependencies
+
+# Build and launch the containers
 build-containers:
 	- docker-compose -f docker-compose.yml up -d --build
 
@@ -50,7 +65,19 @@ endif
 
 # Update the project and the dependencies
 update-project:
+	# Update the composer dependencies
 	- docker-compose -f docker-compose.yml exec php-cli composer -d=laravel --ansi update
+
+	# Update the yarn dependencies
+	- docker-compose run node bash -c "cd /usr/src/app && yarn install"
+
+# Launch application dependencies
+launch-dependencies:
+	# Launch a queue worker
+	- docker-compose -f docker-compose.yml exec php-cli bash -c "cd laravel && nohup sh -c 'php artisan queue:work &' > /dev/null 2>&1"
+
+	# Schedule the cron job
+	- docker-compose -f docker-compose.yml exec php-cli bash -c "(crontab -l ; echo \"* * * * * cd /var/www/app/laravel && php artisan schedule:run\") | crontab"
 
 # Remove the docker containers and deletes project dependencies
 clean: prerequisite prompt-continue
@@ -61,11 +88,25 @@ clean: prerequisite prompt-continue
 	- rm -rf laravel/node_modules
 
 	# Remove the docker containers
-	- docker-compose -f docker-compose.yml down
+	- docker-compose -f docker-compose.yml down --rmi all -v --remove-orphans
+
+	# Remove all unused volumes
+	- docker volume prune -f
+
+	# Remove all unused images
+	- docker images prune -a
 
 # Echos the container status
 status: prerequisite
 	- docker-compose -f docker-compose.yml ps
+
+#####################################################
+#							 						#
+# 							 						#
+# BASH CLI TARGETS			 						#
+#							 						#
+#							 						#
+####################################################
 
 # Opens a bash prompt to the php cli container
 bash-cli: prerequisite
@@ -90,6 +131,26 @@ bash-nginx: prerequisite
 # Opens the mysql cli
 mysql-cli:
 	- docker-compose -f docker-compose.yml exec mysql mysql -u root -p$(MYSQL_ROOT_PASSWORD)
+
+#####################################################
+#							 						#
+# 							 						#
+# GENERAL TARGETS			 						#
+#							 						#
+#							 						#
+####################################################
+
+# Opens the default browser
+open-browser:
+	- open http://localhost
+
+#####################################################
+#							 						#
+# 							 						#
+# INTERNAL TARGETS			 						#
+#							 						#
+#							 						#
+####################################################
 
 # Validates the prerequisites such as environment variable
 prerequisite: check-environment
